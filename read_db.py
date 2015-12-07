@@ -15,5 +15,10 @@ print("Column Names")
 print(list(docs.columns.values))
 print("Number of Rows: %d" % len(docs))
 
+for i in range(len(docs)):
+    if 'Kirchner' in docs.body.iloc[i]:
+        print (docs.body.iloc[i])
+
+
 #Clean up connection to the database
 connection.close()
