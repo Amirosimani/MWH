@@ -1,0 +1,65 @@
+#functions
+##merge clean.up and clean.corpus
+#Set up connection to the SQLite database
+
+clean.up <- function(x, DF){
+  for (i in 1:nrow(user.query)) {
+    query.body <- rbind(query.body, regmatches(user.query$body[i], 
+                                               regexpr("(nsubject:).*(\\n)?", user.query$body[i]), invert = F))
+    query.body <- gsub("(\\\\n)", " ", query.body)
+    query.body <- gsub("(\\re:)", " ", query.body)
+    query.body <- gsub("(nsubject:)", " ", query.body)
+    assign('query.body',query.body,envir=.GlobalEnv)
+  }}
+
+clean.corpus <- function(user.query){
+  corpus <- Corpus(DataframeSource(query.body))
+  corpus <- tm_map(corpus, stemDocument)
+  corpus <- tm_map(corpus, removeWords, c(stopwords("english"), stopwords("SMART"))) 
+  corpus <- tm_map(corpus, removePunctuation)
+  corpus <- tm_map(corpus, removeNumbers)
+  corpus <- tm_map(corpus, stripWhitespace)
+  assign('corpus',corpus,envir=.GlobalEnv)
+}
+
+pars.date <- function(user.query) {
+  arrive <- ymd_hms(user.query$date, tz = "Pacific/Auckland")
+  time <- hour(arrive)
+  date <- as.Date(as.POSIXct(strptime(user.query$date, "%Y-%m-%d %H:%M:%S")))
+  stripped_date = data.frame(date, time, user.query$body)
+  user.query <- stripped_date[order(date),]
+  assign('user.query',user.query,envir=.GlobalEnv)
+}
+
+word.frequency <- function (TDM){
+  temp <- inspect(TDM)
+  word.frequency <- data.frame(ST = rownames(temp), Freq = rowSums(temp))
+  row.names(word.frequency) <- NULL
+  word.frequency <- word.frequency[order(-word.frequency$Freq),]
+  assign('word.frequency',word.frequency,envir=.GlobalEnv)
+}
+
+chronology <- function(user.query){
+  year2009 <- subset(user.query, format(date,'%Y') %in% c('2009'))
+  year2010 <- subset(user.query, format(date,'%Y') %in% c('2010'))
+  year2011 <- subset(user.query, format(date,'%Y') %in% c('2011'))
+  year2012 <- subset(user.query, format(date,'%Y') %in% c('2012'))
+  y <- as.numeric(c(nrow(year2009),nrow(year2010),nrow(year2011),nrow(year2012)))
+  yy <- c(0,max(y))
+  par(mfrow=c(3,2))
+  barplot(y, main=" Emails per year", names.arg = c("2009","2010","2011","2012"))
+  plot(1, type="n", axes=F, xlab="", ylab="")
+  hist(year2009$time, breaks = 24, freq = T, main = paste("Daily activity in 2009"), xlab = "2009", xlim = c(0,24),ylim = yy)
+  hist(year2010$time, breaks = 24, freq = T, main = paste("Daily activity in 2010"), xlab = "2009", xlim = c(0,24),ylim = yy)
+  hist(year2011$time, breaks = 24, freq = T, main = paste("Daily activity in 2011"), xlab = "2009", xlim = c(0,24),ylim = yy)
+  hist(year2012$time, breaks = 24, freq = T, main = paste("Daily activity in 2012"), xlab = "2009", xlim = c(0,24), ylim = yy)
+}
+
+
+
+shinyServer(function(input, output) {
+  
+  observe({ 
+    keyword <-input$text})
+        
+})
