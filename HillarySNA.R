@@ -1,14 +1,3 @@
-# functions ----
-clean.up <- function(x, DF){
-  for (i in 1:nrow(user.query)) {
-    query.body <- rbind(query.body, regmatches(user.query$body[i], 
-      regexpr("(nsubject:).*(\\n)?", user.query$body[i]), invert = F))
-    query.body <- gsub("(\\\\n)", " ", query.body)
-    query.body <- gsub("(\\re:)", " ", query.body)
-    query.body <- gsub("(nsubject:)", " ", query.body)
-    assign('query.body',query.body,envir=.GlobalEnv)
-  }}
-
 ### 2. Improt data----
 # 2.1 Set up connection to the SQLite database
 library(DBI)
@@ -50,25 +39,40 @@ DF[, Time:=as.ITime(Time)]
 ### 3. graph matrix ----
 #senders and recievers
 b<- setDT(tstrsplit(as.character(DF$body), "Subject:", fixed=TRUE))[]
-b[ ,`:=`(V2 = NULL, V3 = NULL, V4 = NULL)]
+b2 <- b[ ,`:=`(V2 = NULL, V3 = NULL, V4 = NULL)] #remove the body of messages
 
-c<- setDT(tstrsplit(as.character(b$V1), "nCc:", fixed=TRUE))[]
-#drop last 2 coumns and do the same process for others
+#nCC
+c <- setDT(tstrsplit(as.character(b2$V1), "nCc:", fixed=TRUE))[]
+c2 <- c[ ,`:=`(V3 = NULL, V4 = NULL)]
+c3 <- setDT(tstrsplit(as.character(c2$V2), "nSent:", fixed=TRUE))[]
+cc <- c3[ ,`:=`(V2 = NULL)]
+names(cc)[names(cc) == "V1"] = "cc" #extract CCs to a column
 
- 
-  m <- gsub(".*From:\\.*|\\n.*", "", b$V1[1])
-  gsub(".*\\\n","",b$V1[1])
-  gsub("^(.*?)\\nSent.*", "\\1", b$V1[1])
+#nTo
+d <- setDT(tstrsplit(as.character(c2$V1), "nTo:", fixed=TRUE))[]
+d2 <- d[ ,`:=`(V3 = NULL, V4 = NULL, V5 = NULL, V6 = NULL)]
+d3 <- setDT(tstrsplit(as.character(d2$V2), "nSent:", fixed=TRUE))[]
+reciepients <- d3[ ,`:=`(V2 = NULL)]
+names(reciepients)[names(reciepients) == "V1"] = "to" #extract CCs to a column
 
+#nFrom
+e <- setDT(tstrsplit(as.character(d2$V1), "nSent:", fixed=TRUE))[]
+from <- e[ ,`:=`(V2 = NULL)]
+names(from)[names(from) == "V1"] = "from" #extract Senders to a column
 
+#binding appropriate columns together 
+people <- cbind(from, reciepients, cc)
 
-library(stringr)
-str_extract(string = b$V1[1], pattern = regexp("(?<=From:).*(?=\\n)"))
+#cleaning up
+people$from <- as.data.frame(sapply(people$from,gsub,pattern="From:",replacement=""))
+#people$from <- as.data.frame(sapply(people$from,gsub,pattern="^.*< *(.*?) +>.*$",replacement=""))
 
+gsub("^.*< *(.*?) +>.*$", "\\1", people$from[1])
+people <- as.data.frame(sapply(people,gsub,pattern="\\\\n",replacement=""))
 
-  a<- setDT(tstrsplit(as.character(DF$body), "\\\n", fixed=TRUE))[]
+#trim leading/tailing whitespae
+people <- data.frame(lapply(people, trimws))
 
-  a<-gsub("nTo", "\\\", b$V1)
 
 
 #create attribute data
