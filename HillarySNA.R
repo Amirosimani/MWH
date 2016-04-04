@@ -39,36 +39,71 @@ DF[, Time:=as.ITime(Time)]
 ### 3. graph matrix ----
 #senders and recievers
 b<- setDT(tstrsplit(as.character(DF$body), "Subject:", fixed=TRUE))[]
-b2 <- b[ ,`:=`(V2 = NULL, V3 = NULL, V4 = NULL)] #remove the body of messages
+b <- b[ ,`:=`(V2 = NULL, V3 = NULL, V4 = NULL)] #remove the body of messages
 
 #nCC
-c <- setDT(tstrsplit(as.character(b2$V1), "nCc:", fixed=TRUE))[]
+c <- setDT(tstrsplit(as.character(b$V1), "Cc:", fixed=TRUE))[]
 c2 <- c[ ,`:=`(V3 = NULL, V4 = NULL)]
-c3 <- setDT(tstrsplit(as.character(c2$V2), "nSent:", fixed=TRUE))[]
-cc <- c3[ ,`:=`(V2 = NULL)]
-names(cc)[names(cc) == "V1"] = "cc" #extract CCs to a column
+c <- setDT(tstrsplit(as.character(c2$V2), "nSent:", fixed=TRUE))[]
+c <- c[ ,`:=`(V2 = NULL)]
+names(c)[names(c) == "V1"] = "cc" #extract CCs to a column
 
 #nTo
-d <- setDT(tstrsplit(as.character(c2$V1), "nTo:", fixed=TRUE))[]
+d <- setDT(tstrsplit(as.character(c2$V1), "To:", fixed=TRUE))[]
 d2 <- d[ ,`:=`(V3 = NULL, V4 = NULL, V5 = NULL, V6 = NULL)]
-d3 <- setDT(tstrsplit(as.character(d2$V2), "nSent:", fixed=TRUE))[]
-reciepients <- d3[ ,`:=`(V2 = NULL)]
-names(reciepients)[names(reciepients) == "V1"] = "to" #extract CCs to a column
+d <- setDT(tstrsplit(as.character(d2$V2), "Sent:", fixed=TRUE))[]
+d <- d[ ,`:=`(V2 = NULL, V3=NULL)]
+names(d)[names(d) == "V1"] = "to" #extract CCs to a column
 
 #nFrom
-e <- setDT(tstrsplit(as.character(d2$V1), "nSent:", fixed=TRUE))[]
-from <- e[ ,`:=`(V2 = NULL)]
-names(from)[names(from) == "V1"] = "from" #extract Senders to a column
+e <- setDT(tstrsplit(as.character(d2$V1), "Sent:", fixed=TRUE))[]
+e <- e[ ,`:=`(V2 = NULL)]
+names(e)[names(e) == "V1"] = "from" #extract Senders to a column
 
 #binding appropriate columns together 
-people <- cbind(from, reciepients, cc)
+people <- cbind(e, d, c)
 
-#cleaning up
+## cleaning up
 people$from <- as.data.frame(sapply(people$from,gsub,pattern="From:",replacement=""))
-#people$from <- as.data.frame(sapply(people$from,gsub,pattern="^.*< *(.*?) +>.*$",replacement=""))
-
-gsub("^.*< *(.*?) +>.*$", "\\1", people$from[1])
+# get rid of \n
 people <- as.data.frame(sapply(people,gsub,pattern="\\\\n",replacement=""))
+
+library(qdap)
+people$from <-  genX(people$from, " <", ">")
+people$from <-  genX(people$from, "[", "]")
+people$from <-  genX(people$from, "(", ")")
+people$from <- as.data.frame(sapply(people$from,gsub,pattern="'",replacement=""))
+people$from  <- gsub("(Sent)(.*)($)", "", people$from)
+people$from  <- gsub("(Classified)(.*)($)", "", people$from)
+people$from  <- gsub("(UNCLASSIFIED)(.*)($)", "", people$from)
+people$from  <- gsub("(Date)(.*)($)", "", people$from)
+people$from  <- gsub("(<)(.*)($)", "", people$from)
+people$from  <- gsub("([[])(.*)($)", "", people$from)
+people$from  <- gsub("([(])(.*)($)", "", people$from)
+people$from  <- gsub(")", "", people$from)
+people$from  <- gsub("<", "", people$from)
+
+
+people$to  <- gsub("(<)(.*)(>*)", "", people$to)
+people$to <- as.data.frame(sapply(people$to,gsub,pattern="'",replacement=""))
+people$to  <- gsub("(UNCLASSIFIED)(.*)($)", "", people$to)
+people$to  <- gsub("(CONFIDENTIAL)(.*)($)", "", people$to)
+people$to  <- gsub("(just)(.*)($)", "", people$to)
+people$to  <- gsub("(Famous)(.*)($)", "", people$to)
+people$to <-  genX(people$to, "(", ")")
+
+
+people$cc  <- gsub("(<)(.*)(>*)", "", people$cc)
+people$cc <- as.data.frame(sapply(people$cc,gsub,pattern="'",replacement=""))
+people$cc  <- gsub("(Subject)(.*)($)", "", people$cc)
+people$cc  <- gsub("(Classified)(.*)($)", "", people$cc)
+people$cc  <- gsub("(UNCLASSIFIED)(.*)($)", "", people$cc)
+people$cc  <- gsub("(\n\n)(.*)(\n\n)", "", people$cc)
+people$cc  <- gsub("\n", "", people$cc)
+people$cc <-  genX(people$cc, "(", ")")
+people$cc  <- gsub("[(]", "", people$cc)
+people$cc  <- gsub("\\\\", "", people$cc)
+
 
 #trim leading/tailing whitespae
 people <- data.frame(lapply(people, trimws))
