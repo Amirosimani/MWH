@@ -1,4 +1,4 @@
-### 2. Improt data----
+### 1. Improt data----
 # 2.1 Set up connection to the SQLite database
 library(DBI)
 library(RSQLite)
@@ -36,7 +36,7 @@ DF[,c("date"):=NULL]
 DF[, Date:=as.IDate(Date)]
 DF[, Time:=as.ITime(Time)]
 
-### 3. graph matrix ----
+### 2. contact list ----
 #senders and recievers
 b<- setDT(tstrsplit(as.character(DF$body), "Subject:", fixed=TRUE))[]
 b <- b[ ,`:=`(V2 = NULL, V3 = NULL, V4 = NULL)] #remove the body of messages
@@ -63,57 +63,56 @@ names(e)[names(e) == "V1"] = "from" #extract Senders to a column
 #binding appropriate columns together 
 people <- cbind(e, d, c)
 
-## cleaning up
+### cleaning up----
+#senders
 people$from <- as.data.frame(sapply(people$from,gsub,pattern="From:",replacement=""))
 # get rid of \n
 people <- as.data.frame(sapply(people,gsub,pattern="\\\\n",replacement=""))
 
-library(qdap)
-people$from <-  genX(people$from, " <", ">")
-people$from <-  genX(people$from, "[", "]")
-people$from <-  genX(people$from, "(", ")")
-people$from <- as.data.frame(sapply(people$from,gsub,pattern="'",replacement=""))
+people$from  <- gsub("(<)(.*)(>)", "", people$from)
+people$from  <- gsub("([[])(.*)([]])", "", people$from)
+people$from  <- gsub("([(])(.*)([)])", "", people$from)
 people$from  <- gsub("(Sent)(.*)($)", "", people$from)
 people$from  <- gsub("(Classified)(.*)($)", "", people$from)
 people$from  <- gsub("(UNCLASSIFIED)(.*)($)", "", people$from)
+people$from  <- gsub("(Reason)(.*)($)", "", people$from)
 people$from  <- gsub("(Date)(.*)($)", "", people$from)
 people$from  <- gsub("(<)(.*)($)", "", people$from)
 people$from  <- gsub("([[])(.*)($)", "", people$from)
 people$from  <- gsub("([(])(.*)($)", "", people$from)
 people$from  <- gsub(")", "", people$from)
 people$from  <- gsub("<", "", people$from)
+people$from  <- gsub(">", "", people$from)
+people$from  <- gsub("•", "", people$from)
+people$from  <- gsub("»", "", people$from)
+people$from  <- gsub("-", "", people$from)
+people$from  <- gsub("»", "", people$from)
+people$from  <- gsub("»", "", people$from)
 
-
+#cleaning up reciepeints 
 people$to  <- gsub("(<)(.*)(>*)", "", people$to)
-people$to <- as.data.frame(sapply(people$to,gsub,pattern="'",replacement=""))
+people$to  <- gsub("([(])(.*)([)]*)", "", people$to)
 people$to  <- gsub("(UNCLASSIFIED)(.*)($)", "", people$to)
 people$to  <- gsub("(CONFIDENTIAL)(.*)($)", "", people$to)
 people$to  <- gsub("(just)(.*)($)", "", people$to)
 people$to  <- gsub("(Famous)(.*)($)", "", people$to)
-people$to <-  genX(people$to, "(", ")")
 
-
+#cleaning up CCs
 people$cc  <- gsub("(<)(.*)(>*)", "", people$cc)
-people$cc <- as.data.frame(sapply(people$cc,gsub,pattern="'",replacement=""))
+people$cc  <- gsub("([()])(.*)([)])", "", people$cc)
 people$cc  <- gsub("(Subject)(.*)($)", "", people$cc)
 people$cc  <- gsub("(Classified)(.*)($)", "", people$cc)
 people$cc  <- gsub("(UNCLASSIFIED)(.*)($)", "", people$cc)
 people$cc  <- gsub("(\n\n)(.*)(\n\n)", "", people$cc)
 people$cc  <- gsub("\n", "", people$cc)
-people$cc <-  genX(people$cc, "(", ")")
 people$cc  <- gsub("[(]", "", people$cc)
 people$cc  <- gsub("\\\\", "", people$cc)
 
+people <- as.data.frame(sapply(people,gsub,pattern="'",replacement=""))
 
 #trim leading/tailing whitespae
 people <- data.frame(lapply(people, trimws))
-
-
-
-#create attribute data
-#Att <- DF[,c("subject","body"):=NULL]
-
-regmatches(b$V1[1], regexpr("(nTo:).*(\\n)?", b$body[1]), invert = F)
-
+#writing csv file
+write.csv(people, file = "people.csv")
 
 
