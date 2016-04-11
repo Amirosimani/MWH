@@ -67,14 +67,13 @@ people <- cbind(e, d, c)
 #senders
 people$from  <- gsub("From:", "", people$from)
 
-people <- as.data.frame(sapply(people, function(x) gsub("(<)(.*)(>)", "", x)))
-people <- as.data.frame(sapply(people, function(x) gsub("([[])(.*)([]])", "", x)))
-people <- as.data.frame(sapply(people, function(x) gsub("([(])(.*)([)])", "", x)))
-people <- as.data.frame(sapply(people, function(x) gsub("(Sent)(.*)($)", "", x)))
-people <- as.data.frame(sapply(people, function(x) gsub("(Classified)(.*)($)", "", x)))
-people <- as.data.frame(sapply(people, function(x) gsub("(UNCLASSIFIED)(.*)($)", "", x)))
-people <- as.data.frame(sapply(people, function(x) gsub("(Reason)(.*)($)", "", x)))
-people <- as.data.frame(sapply(people, function(x) gsub("(Date)(.*)($)", "", x)))
+people <- as.data.frame(sapply(people, function(x) gsub("(<)(.*)(>)|([[])(.*)([]])|([(])(.*)([)])", "", x)))
+
+people <- as.data.frame(sapply(people, function(x) gsub("(Sent)(.*)($)|(Classified)(.*)($)|(Action)(.*)($)|(mailto)(.*)($)|
+                                                        (UNCLASSIFIED)(.*)($)|(Reason)(.*)($)|(Date)(.*)($)|
+                                                        (Infullappreciation)(.*)($)|(RELEASEINPART)(.*)($)", "", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('[[:space:]]', "", x)))
+
 people <- as.data.frame(sapply(people, function(x) gsub("\\\\n", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub("(<)(.*)($)", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub("([[])(.*)($)", "", x)))
@@ -92,6 +91,8 @@ people <- as.data.frame(sapply(people, function(x) gsub('-', '', x)))
 people <- as.data.frame(sapply(people, function(x) gsub(",", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub("'", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub("[.]", "", x)))
+people <- as.data.frame(sapply(people, function(x) gsub("[*]", "", x)))
+people <- as.data.frame(sapply(people, function(x) gsub("[+]", "", x)))
 
 #cleaning up reciepeints 
 people$to  <- gsub("(CONFIDENTIAL)(.*)($)", "", people$to)
@@ -104,11 +105,53 @@ people$cc  <- gsub("(\n\n)(.*)(\n\n)", "", people$cc)
 people$cc  <- gsub("\n", "", people$cc)
 people$cc  <- gsub("\\\\", "", people$cc)
 
+#post-write gsubs
+people <- as.data.frame(sapply(people, function(x) gsub("â–ª|â€ž|â€”", "", x)))
+people <- as.data.frame(sapply(people, function(x) gsub("BESTCOPY", "", x)))
+people <- as.data.frame(sapply(people, function(x) gsub("B6|B1|B5|B61|B114|14", "", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('[0-9]+', "", x)))
+
 #trim leading/tailing whitespae
 people <- data.frame(lapply(people, trimws))
 
+#name correction
+#Huma Abedin
+people <- as.data.frame(sapply(people, function(x) gsub('Hu ma|Hume|Humi|Hunia|Hunna|Htma|HuiTia', "Huma", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('Abed in|Abeclin', "Abedin", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('AbedinHuma|abedinh@stategov ', "HumaAbedin", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('abedinh@stategov|abedinh@stategov', "HumaAbedin", x)))
+#Jake Sulivan
+people <- as.data.frame(sapply(people, function(x) gsub('JacobJ|Jacobi|Jake', "Jacob", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('jakesullivan', "SullivanJacob", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('JacobSullivan', "SullivanJacob", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('SullivanJacobI|SullivanJacobJ', "SullivanJacob", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('sullivanjj@stategov|sullivanij@stategov', "SullivanJacob", x)))
+#AnneMarie Slaughter
+people <- as.data.frame(sapply(people, function(x) gsub('SlaughterAnneMarie', "AnneMarieSlaughter", x)))
+#William Burns
+people <- as.data.frame(sapply(people, function(x) gsub('WilliamJ', "William", x)))
+#Hillary
+people <- as.data.frame(sapply(people, function(x) gsub('HillaryClinton', "H", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('HDR@clintonemailcom', "H", x)))
+#cherylmills
+people <- as.data.frame(sapply(people, function(x) gsub('cherylmills', "CherylMills", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('MillsCherylD|millscd@stategov', "CherylMills", x)))
+#OPSNEWs
+people <- as.data.frame(sapply(people, function(x) gsub('OpsNewsTicker@stategov', "OpsNewsTicker", x)))
+#Ross Alec
+people <- as.data.frame(sapply(people, function(x) gsub('RossAlecJ', "RossAlec", x)))
+#Valmoro Lona J
+people <- as.data.frame(sapply(people, function(x) gsub('ValmoroLonaJ', "ValmoroLona", x)))
+#Pverveer
+people <- as.data.frame(sapply(people, function(x) gsub('pverveer', "pVerveer", x)))
+#Jiloty Lauren C
+people <- as.data.frame(sapply(people, function(x) gsub('JilotyLC@stategov', "JilotyLaurenC", x)))
+#VerveerMelanneS
+people <- as.data.frame(sapply(people, function(x) gsub('verveerms@stategov', "VerveerMelanneS", x)))
+
+
 #writing csv file
-write.csv(people, file = "people.csv", row.names=NULL)
+write.csv(people, file = "people.csv")
 
 ### 4. entity resolution ----
 #read csv file
@@ -118,18 +161,35 @@ people$from <- as.character(people$from)
 people$to <- as.character(people$to)
 people$cc <- as.character(people$cc)
 
-# It creates a matrix with the Standard Levenshtein distance between the name fields of both sources
-dist.name<-adist(people$from,people$to, partial = TRUE, ignore.case = TRUE)
+#sort senders, recipients, ccs based on frequecny
+library(data.table)
+from <- as.data.frame(sort(table(people$from), decreasing = TRUE))
+from <- setDT(from, keep.rownames = TRUE)[]
+write.csv(from, file = "from.csv")
 
-# We now take the pairs with the minimum distance
-min.name<-apply(dist.name, 1, min)
+"to <- setDT(tstrsplit(as.character(people$to), ";", fixed=TRUE))[]
+to <-  stack(to)
+to <- as.data.frame(sort(table(to$values), decreasing = TRUE))
+write.csv(to, file = "to.csv")
 
-match.s1.s2<-NULL  
-for(i in 1:nrow(dist.name))
-{
-  s2.i<-match(min.name[i],dist.name[i,])
-  s1.i<-i
-  match.s1.s2<-rbind(data.frame(s2.i=s2.i,s1.i=s1.i,s2name=source2.devices[s2.i,]$name, s1name=source1.devices[s1.i,]$name, adist=min.name[i]),match.s1.s2)
-}
-# and we then can have a look at the results
-View(match.s1.s2)
+cc <- setDT(tstrsplit(as.character(people$cc), ";", fixed=TRUE))[]
+cc <-  stack(cc)
+cc <- as.data.frame(sort(table(cc$values), decreasing = TRUE))
+write.csv(cc, file = "cc.csv")"
+
+#selecting top 100 senders
+from <- read.csv('/Users/Amiros/GitHub/MWH/from.csv', sep = ",")
+top100 <- from[1:100,]
+
+selected <- people[people$from %in% top100$rn,]
+a <- setDT(tstrsplit(as.character(selected$to), ";", fixed=TRUE))[]
+b <- setDT(tstrsplit(as.character(selected$cc), ";", fixed=TRUE))[]
+mat_sel <- cbind(selected$from, a,b)
+colnames(mat_sel)[1] <- "from"
+
+library(igraph)
+#edges <- do.call(rbind, Map(cbind, mat_sel[,1], apply(mat_sel[,-1], 1, na.omit)))
+s1 <- cbind(selected$from, a$V1)
+
+library(igraph)
+get.adjacency(graph.edgelist(as.matrix(s1), directed=T))
