@@ -63,7 +63,7 @@ names(e)[names(e) == "V1"] = "from" #extract Senders to a column
 #binding appropriate columns together 
 people <- cbind(e, d, c)
 
-### 3. cleaning up----
+### 3. cleaning up and entitiy resoluition----
 #senders
 people$from  <- gsub("From:", "", people$from)
 
@@ -132,7 +132,7 @@ people <- as.data.frame(sapply(people, function(x) gsub('SlaughterAnneMarie', "A
 people <- as.data.frame(sapply(people, function(x) gsub('WilliamJ', "William", x)))
 #Hillary
 people <- as.data.frame(sapply(people, function(x) gsub('HillaryClinton', "H", x)))
-people <- as.data.frame(sapply(people, function(x) gsub('HDR@clintonemailcom', "H", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('hr@mycingularblackberrynet|DR@clintonemailcoms|HDR@clintonemailcom|HDR@clintonemailcorn|HDR@clintonemailcom|HDR@clintonemallcom|HDR@clintonemallcomi|HDR@clintomailcom|HDR@clintomailcomi|HDR@clim', "H", x)))
 #cherylmills
 people <- as.data.frame(sapply(people, function(x) gsub('cherylmills', "CherylMills", x)))
 people <- as.data.frame(sapply(people, function(x) gsub('MillsCherylD|millscd@stategov', "CherylMills", x)))
@@ -149,47 +149,46 @@ people <- as.data.frame(sapply(people, function(x) gsub('JilotyLC@stategov', "Ji
 #VerveerMelanneS
 people <- as.data.frame(sapply(people, function(x) gsub('verveerms@stategov', "VerveerMelanneS", x)))
 
+people <- as.data.frame(sapply(people, function(x) gsub('PowerSamanthaJ', "PowerSamantha", x)))
 
 #writing csv file
 write.csv(people, file = "people.csv")
 
-### 4. entity resolution ----
+### 4. adjacency ----
 #read csv file
 people <- read.csv('/Users/Amiros/GitHub/MWH/people.csv', sep = ",")
 people$X <- NULL
-people$from <- as.character(people$from)
-people$to <- as.character(people$to)
-people$cc <- as.character(people$cc)
 
-#sort senders, recipients, ccs based on frequecny
+#sort senders based on frequecny
+people$from <- as.character(people$from)
+people <- as.data.frame(sapply(people, function(x) gsub("UNCLASSIFIEDUSDepartmentofStateCaseNoFDocNoC", "", x)))
+
 library(data.table)
 from <- as.data.frame(sort(table(people$from), decreasing = TRUE))
-from <- setDT(from, keep.rownames = TRUE)[]
-write.csv(from, file = "from.csv")
-
-"to <- setDT(tstrsplit(as.character(people$to), ";", fixed=TRUE))[]
-to <-  stack(to)
-to <- as.data.frame(sort(table(to$values), decreasing = TRUE))
-write.csv(to, file = "to.csv")
-
-cc <- setDT(tstrsplit(as.character(people$cc), ";", fixed=TRUE))[]
-cc <-  stack(cc)
-cc <- as.data.frame(sort(table(cc$values), decreasing = TRUE))
-write.csv(cc, file = "cc.csv")"
+from <- setDT(from, keep.rownames = T)[]
+#write.csv(from, file = "from.csv")
 
 #selecting top 100 senders
 from <- read.csv('/Users/Amiros/GitHub/MWH/from.csv', sep = ",")
 top100 <- from[1:100,]
-
+top100 <- top100[rn != '']
 selected <- people[people$from %in% top100$rn,]
-a <- setDT(tstrsplit(as.character(selected$to), ";", fixed=TRUE))[]
-b <- setDT(tstrsplit(as.character(selected$cc), ";", fixed=TRUE))[]
-mat_sel <- cbind(selected$from, a,b)
+
+#split to & cc columns and remove NAs and non-address rows
+recipients_sep <- setDT(tstrsplit(as.character(selected$to), ";", fixed=TRUE))[]
+recipients_sep <- recipients_sep[, list(V1)] ##keep the first recipeint
+#b <- setDT(tstrsplit(as.character(selected$cc), ";", fixed=TRUE))[] ##dont care about CCs at the moment
+mat_sel <- cbind(selected$from, recipients_sep)
 colnames(mat_sel)[1] <- "from"
+mat_sel <- mat_sel[ V1 != 'NA' & nchar(V1) < 29 & V1 != ''] 
 
-library(igraph)
-#edges <- do.call(rbind, Map(cbind, mat_sel[,1], apply(mat_sel[,-1], 1, na.omit)))
-s1 <- cbind(selected$from, a$V1)
+library(plyr)
+cdata1 <- ddply(mat_sel, c("from", "V1"), summarise,   N = length(from))
 
+#Adjacency matrix
 library(igraph)
-get.adjacency(graph.edgelist(as.matrix(s1), directed=T))
+mat <- cdata1
+mat$N <- NULL
+
+a <- get.adjacency(graph.edgelist(as.matrix(mat), directed=T))
+
