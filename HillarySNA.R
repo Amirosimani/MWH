@@ -166,12 +166,15 @@ people <- as.data.frame(sapply(people, function(x) gsub("UNCLASSIFIEDUSDepartmen
 library(data.table)
 from <- as.data.frame(sort(table(people$from), decreasing = TRUE))
 from <- setDT(from, keep.rownames = T)[]
-#write.csv(from, file = "from.csv")
+write.csv(from, file = "from.csv")
 
 #selecting top 100 senders
 from <- read.csv('/Users/Amiros/GitHub/MWH/from.csv', sep = ",")
+from$X <- NULL
+
 top100 <- from[1:100,]
-top100 <- top100[rn != '']
+colnames(top100) <- c("person", "freq")
+#top100 <- top100[person != '']
 selected <- people[people$from %in% top100$rn,]
 
 #split to & cc columns and remove NAs and non-address rows
