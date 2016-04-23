@@ -154,7 +154,7 @@ people <- as.data.frame(sapply(people, function(x) gsub('PowerSamanthaJ', "Power
 #writing csv file
 write.csv(people, file = "people.csv")
 
-### 4. adjacency ----
+### 4. pre-adjacency ----
 #read csv file
 people <- read.csv('/Users/Amiros/GitHub/MWH/people.csv', sep = ",")
 people$X <- NULL
@@ -166,16 +166,12 @@ people <- as.data.frame(sapply(people, function(x) gsub("UNCLASSIFIEDUSDepartmen
 library(data.table)
 from <- as.data.frame(sort(table(people$from), decreasing = TRUE))
 from <- setDT(from, keep.rownames = T)[]
-write.csv(from, file = "from.csv")
 
 #selecting top 100 senders
-from <- read.csv('/Users/Amiros/GitHub/MWH/from.csv', sep = ",")
-from$X <- NULL
-
 top100 <- from[1:100,]
 colnames(top100) <- c("person", "freq")
-#top100 <- top100[person != '']
-selected <- people[people$from %in% top100$rn,]
+top100 <- top100[person != '']
+selected <- people[people$from %in% top100$person,]
 
 #split to & cc columns and remove NAs and non-address rows
 recipients_sep <- setDT(tstrsplit(as.character(selected$to), ";", fixed=TRUE))[]
@@ -186,12 +182,18 @@ colnames(mat_sel)[1] <- "from"
 mat_sel <- mat_sel[ V1 != 'NA' & nchar(V1) < 29 & V1 != ''] 
 
 library(plyr)
-cdata1 <- ddply(mat_sel, c("from", "V1"), summarise,   N = length(from))
+cdata1 <- ddply(mat_sel, c("from", "V1"), summarise,   N = length(from))#with freq
+write.csv(cdata1, file = "edge_list_aggregated.csv")
+write.csv(mat_sel, file = "edge_list.csv")
 
-#Adjacency matrix
+### 4.5 Adjacency matrix ----
+rm(list = ls())
+edge_list <- read.csv('/Users/Amiros/GitHub/MWH/edge_list.csv', sep = ",")
+edge_list$X <- NULL
+
 library(igraph)
-mat <- cdata1
-mat$N <- NULL
+adj_mat <- get.adjacency(graph.edgelist(as.matrix(edge_list), directed=T))
+adj_mm <- as.matrix(adj_mat)
+write.csv(adj_mm, file = "adj_mat1.csv")
 
-a <- get.adjacency(graph.edgelist(as.matrix(mat), directed=T))
-
+### 5. Attributes ----
