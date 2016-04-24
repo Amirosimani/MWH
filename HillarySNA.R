@@ -152,7 +152,9 @@ people <- as.data.frame(sapply(people, function(x) gsub('verveerms@stategov', "V
 people <- as.data.frame(sapply(people, function(x) gsub('PowerSamanthaJ', "PowerSamantha", x)))
 
 #writing csv file
+people <- cbind(people, docs$reason)
 write.csv(people, file = "people.csv")
+rm(list = ls())
 
 ### 4. pre-adjacency ----
 #read csv file
@@ -177,12 +179,12 @@ selected <- people[people$from %in% top100$person,]
 recipients_sep <- setDT(tstrsplit(as.character(selected$to), ";", fixed=TRUE))[]
 recipients_sep <- recipients_sep[, list(V1)] ##keep the first recipeint
 #b <- setDT(tstrsplit(as.character(selected$cc), ";", fixed=TRUE))[] ##dont care about CCs at the moment
-mat_sel <- cbind(selected$from, recipients_sep)
+mat_sel <- cbind(selected$from, recipients_sep, selected$docs.reason)
 colnames(mat_sel)[1] <- "from"
 mat_sel <- mat_sel[ V1 != 'NA' & nchar(V1) < 29 & V1 != ''] 
 
 library(plyr)
-cdata1 <- ddply(mat_sel, c("from", "V1"), summarise,   N = length(from))#with freq
+cdata1 <- ddply(mat_sel, c("from", "V1", "V3"), summarise,   N = length(from))#with freq
 write.csv(cdata1, file = "edge_list_aggregated.csv")
 write.csv(mat_sel, file = "edge_list.csv")
 
