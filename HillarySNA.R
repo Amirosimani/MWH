@@ -106,7 +106,9 @@ people$cc  <- gsub("\n", "", people$cc)
 people$cc  <- gsub("\\\\", "", people$cc)
 
 #post-write gsubs
-people <- as.data.frame(sapply(people, function(x) gsub("â–ª|â€ž|â€”", "", x)))
+people <- as.data.frame(sapply(people, function(x) gsub("latin1", "", x)))
+people <- as.data.frame(sapply(people, function(x) gsub("ASCII", "", x)))
+
 people <- as.data.frame(sapply(people, function(x) gsub("BESTCOPY", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub("B6|B1|B5|B61|B114|14", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub('[0-9]+', "", x)))
@@ -124,7 +126,7 @@ people <- as.data.frame(sapply(people, function(x) gsub('abedinh@stategov|abedin
 people <- as.data.frame(sapply(people, function(x) gsub('JacobJ|Jacobi|Jake', "Jacob", x)))
 people <- as.data.frame(sapply(people, function(x) gsub('jakesullivan', "SullivanJacob", x)))
 people <- as.data.frame(sapply(people, function(x) gsub('JacobSullivan', "SullivanJacob", x)))
-people <- as.data.frame(sapply(people, function(x) gsub('SullivanJacobI|SullivanJacobJ', "SullivanJacob", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('SullivanJacobI|SullivanJacobJ|jakesullivar|lakesullivar', "SullivanJacob", x)))
 people <- as.data.frame(sapply(people, function(x) gsub('sullivanjj@stategov|sullivanij@stategov', "SullivanJacob", x)))
 #AnneMarie Slaughter
 people <- as.data.frame(sapply(people, function(x) gsub('SlaughterAnneMarie', "AnneMarieSlaughter", x)))
@@ -150,6 +152,17 @@ people <- as.data.frame(sapply(people, function(x) gsub('JilotyLC@stategov', "Ji
 people <- as.data.frame(sapply(people, function(x) gsub('verveerms@stategov', "VerveerMelanneS", x)))
 
 people <- as.data.frame(sapply(people, function(x) gsub('PowerSamanthaJ', "PowerSamantha", x)))
+
+people <- as.data.frame(sapply(people, function(x) gsub('CampbelIKM@stategov', "CampbellKurtM", x)))
+
+people <- as.data.frame(sapply(people, function(x) gsub('CampbelIKM@stategov', "CampbellKurtM", x)))
+
+people <- as.data.frame(sapply(people, function(x) gsub('CampbelIKM@stategov', "CampbellKurtM", x)))
+
+people <- as.data.frame(sapply(people, function(x) gsub('CampbelIKM@stategov', "CampbellKurtM", x)))
+
+people <- as.data.frame(sapply(people, function(x) gsub('CampbelIKM@stategov', "CampbellKurtM", x)))
+
 
 #writing csv file
 people <- cbind(people, docs$reason)
@@ -192,6 +205,8 @@ write.csv(mat_sel, file = "edge_list.csv")
 rm(list = ls())
 edge_list <- read.csv('/Users/Amiros/GitHub/MWH/edge_list.csv', sep = ",")
 edge_list$X <- NULL
+classif <- edge_list$V3
+edge_list$V3 <- NULL
 
 library(igraph)
 adj_mat <- get.adjacency(graph.edgelist(as.matrix(edge_list), directed=T))
