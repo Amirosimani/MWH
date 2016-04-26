@@ -1,5 +1,5 @@
 ### 1. Improt data----
-# 2.1 Set up connection to the SQLite database
+#Set up connection to the SQLite database
 library(DBI)
 library(RSQLite)
 connection <- dbConnect(RSQLite::SQLite(), dbname = "clinton.sqlite")
@@ -64,6 +64,13 @@ names(e)[names(e) == "V1"] = "from" #extract Senders to a column
 people <- cbind(e, d, c)
 
 ### 3. cleaning up and entitiy resoluition----
+simmilarity_index <- function(x, y){
+  if (max(nchar(as.character(x)), nchar(as.character(y))) > 0){
+  sim_index <- 1- stringdist(x, y, method = "lv")/max(nchar(as.character(x)), nchar(as.character(y)))
+  return(sim_index)
+
+  }
+}
 #senders
 people$from  <- gsub("From:", "", people$from)
 
@@ -73,6 +80,8 @@ people <- as.data.frame(sapply(people, function(x) gsub("(Sent)(.*)($)|(Classifi
                                                         (UNCLASSIFIED)(.*)($)|(Reason)(.*)($)|(Date)(.*)($)|
                                                         (Infullappreciation)(.*)($)|(RELEASEINPART)(.*)($)", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub('[[:space:]]', "", x)))
+people <- as.data.frame(sapply(people, function(x) gsub("UNCLASSIFIEDUSDepartmentofStateCaseNoFDocNoC", "", x)))
+people <- as.data.frame(sapply(people, function(x) gsub("unclassifiedusdepartmentofstatecasenofdocnoc", "", x)))
 
 people <- as.data.frame(sapply(people, function(x) gsub("\\\\n", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub("(<)(.*)($)", "", x)))
@@ -87,7 +96,7 @@ people <- as.data.frame(sapply(people, function(x) gsub("»", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub("«", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub('"', '', x)))
 people <- as.data.frame(sapply(people, function(x) gsub(':', '', x)))
-people <- as.data.frame(sapply(people, function(x) gsub('-', '', x)))
+people <- as.data.frame(sapply(people, function(x) gsub('-|_', '', x)))
 people <- as.data.frame(sapply(people, function(x) gsub(",", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub("'", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub("[.]", "", x)))
@@ -113,56 +122,55 @@ people <- as.data.frame(sapply(people, function(x) gsub("BESTCOPY", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub("B6|B1|B5|B61|B114|14", "", x)))
 people <- as.data.frame(sapply(people, function(x) gsub('[0-9]+', "", x)))
 
+library(dplyr)
+people <- mutate_each(people, funs(tolower))
+
+people <- as.data.frame(sapply(people, function(x) gsub('stategov|stategoy', "", x)))
+
+
 #trim leading/tailing whitespae
 people <- data.frame(lapply(people, trimws))
 
 #name correction
 #Huma Abedin
-people <- as.data.frame(sapply(people, function(x) gsub('Hu ma|Hume|Humi|Hunia|Hunna|Htma|HuiTia', "Huma", x)))
-people <- as.data.frame(sapply(people, function(x) gsub('Abed in|Abeclin', "Abedin", x)))
-people <- as.data.frame(sapply(people, function(x) gsub('AbedinHuma|abedinh@stategov ', "HumaAbedin", x)))
-people <- as.data.frame(sapply(people, function(x) gsub('abedinh@stategov|abedinh@stategov', "HumaAbedin", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('hu ma|hume|humi|hunia|hunna|htma|huiTia', "huma", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('abed in|abeclin', "abedin", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('abedinhuma|abedinh@', "humaabedin", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('abedinh@s|abedinh@s', "humaabedin", x)))
+
 #Jake Sulivan
-people <- as.data.frame(sapply(people, function(x) gsub('JacobJ|Jacobi|Jake', "Jacob", x)))
-people <- as.data.frame(sapply(people, function(x) gsub('jakesullivan', "SullivanJacob", x)))
-people <- as.data.frame(sapply(people, function(x) gsub('JacobSullivan', "SullivanJacob", x)))
-people <- as.data.frame(sapply(people, function(x) gsub('SullivanJacobI|SullivanJacobJ|jakesullivar|lakesullivar', "SullivanJacob", x)))
-people <- as.data.frame(sapply(people, function(x) gsub('sullivanjj@stategov|sullivanij@stategov', "SullivanJacob", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('jacobj|jacobi|jake', "jacob", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('jakesullivan', "jacobsullivan", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('sullivanjacob', "jacobsullivan", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('sullivanjacobI|sullivanjacobj|jakesullivar|lakesullivar', "jacobsullivan", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('sullivanjj@stategov|sullivanij@stategov', "jacobsullivan", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('sullivanjj@|sullivanij@', "jacobsullivan", x)))
+
 #AnneMarie Slaughter
-people <- as.data.frame(sapply(people, function(x) gsub('SlaughterAnneMarie', "AnneMarieSlaughter", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('slaughterannemarie', "annemarieslaughter", x)))
 #William Burns
-people <- as.data.frame(sapply(people, function(x) gsub('WilliamJ', "William", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('williamJ', "william", x)))
 #Hillary
-people <- as.data.frame(sapply(people, function(x) gsub('HillaryClinton', "H", x)))
-people <- as.data.frame(sapply(people, function(x) gsub('hr@mycingularblackberrynet|DR@clintonemailcoms|HDR@clintonemailcom|HDR@clintonemailcorn|HDR@clintonemailcom|HDR@clintonemallcom|HDR@clintonemallcomi|HDR@clintomailcom|HDR@clintomailcomi|HDR@clim', "H", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('hillaryclinton|clintonhillary', "H", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('hr@mycingularblackberrynet|dr@clintonemailcoms|hdr@clintonemailcom|hdr@clintonemailcorn|hdr@clintonemailcom|hdr@clintonemallcom|hdr@clintonemallcomi|hdr@clintomailcom|hdr@clintomailcomi|hdr@clim', "H", x)))
 #cherylmills
-people <- as.data.frame(sapply(people, function(x) gsub('cherylmills', "CherylMills", x)))
-people <- as.data.frame(sapply(people, function(x) gsub('MillsCherylD|millscd@stategov', "CherylMills", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('millscheryld|millscd@', "cherylmills", x)))
 #OPSNEWs
 people <- as.data.frame(sapply(people, function(x) gsub('OpsNewsTicker@stategov', "OpsNewsTicker", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('opsnewsticker@', "opsnewsticker", x)))
+
 #Ross Alec
-people <- as.data.frame(sapply(people, function(x) gsub('RossAlecJ', "RossAlec", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('rossalecj', "rossalec", x)))
 #Valmoro Lona J
-people <- as.data.frame(sapply(people, function(x) gsub('ValmoroLonaJ', "ValmoroLona", x)))
-#Pverveer
-people <- as.data.frame(sapply(people, function(x) gsub('pverveer', "pVerveer", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('valmorolonaj', "valmorolona", x)))
 #Jiloty Lauren C
-people <- as.data.frame(sapply(people, function(x) gsub('JilotyLC@stategov', "JilotyLaurenC", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('jilotylc@', "jilotylaurenc", x)))
 #VerveerMelanneS
-people <- as.data.frame(sapply(people, function(x) gsub('verveerms@stategov', "VerveerMelanneS", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('verveerms@', "verveermelannes", x)))
 
-people <- as.data.frame(sapply(people, function(x) gsub('PowerSamanthaJ', "PowerSamantha", x)))
+people <- as.data.frame(sapply(people, function(x) gsub('powersamanthaj', "powersamantha", x)))
 
-people <- as.data.frame(sapply(people, function(x) gsub('CampbelIKM@stategov', "CampbellKurtM", x)))
-
-people <- as.data.frame(sapply(people, function(x) gsub('CampbelIKM@stategov', "CampbellKurtM", x)))
-
-people <- as.data.frame(sapply(people, function(x) gsub('CampbelIKM@stategov', "CampbellKurtM", x)))
-
-people <- as.data.frame(sapply(people, function(x) gsub('CampbelIKM@stategov', "CampbellKurtM", x)))
-
-people <- as.data.frame(sapply(people, function(x) gsub('CampbelIKM@stategov', "CampbellKurtM", x)))
-
+people <- as.data.frame(sapply(people, function(x) gsub('campbelikm@', "campbellkurtm", x)))
 
 #writing csv file
 people <- cbind(people, docs$reason)
@@ -176,17 +184,19 @@ people$X <- NULL
 
 #sort senders based on frequecny
 people$from <- as.character(people$from)
-people <- as.data.frame(sapply(people, function(x) gsub("UNCLASSIFIEDUSDepartmentofStateCaseNoFDocNoC", "", x)))
 
 library(data.table)
 from <- as.data.frame(sort(table(people$from), decreasing = TRUE))
 from <- setDT(from, keep.rownames = T)[]
+from <- from[rn != '']
+
 
 #selecting top 100 senders
 top100 <- from[1:100,]
 colnames(top100) <- c("person", "freq")
 top100 <- top100[person != '']
 selected <- people[people$from %in% top100$person,]
+
 
 #split to & cc columns and remove NAs and non-address rows
 recipients_sep <- setDT(tstrsplit(as.character(selected$to), ";", fixed=TRUE))[]
